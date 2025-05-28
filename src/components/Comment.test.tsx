@@ -36,7 +36,7 @@ describe('Comment', () => {
         setMenuOpen={setMenuOpen}
       />
     );
-    // Open menu
+    // Opens the menu for editing, deleting, and quote replying
     const menuBtn = screen.getByRole('button');
     fireEvent.click(menuBtn);
     expect(setMenuOpen).toHaveBeenCalledWith(true);

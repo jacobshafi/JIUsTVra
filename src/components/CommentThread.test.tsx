@@ -20,7 +20,6 @@ describe('CommentThread', () => {
   it('renders root and nested comments', () => {
     render(<CommentThread />);
     expect(screen.getByText('Root')).toBeInTheDocument();
-    // expect(screen.getByText('Reply')).toBeInTheDocument();
   });
 
   it('disables comment button until typing', async () => {
@@ -34,9 +33,8 @@ describe('CommentThread', () => {
 
   it('shows quote reply when menu is used', async () => {
     render(<CommentThread />);
-    // Open menu for first comment
     const menuButtons = screen.getAllByRole('button');
-    fireEvent.click(menuButtons.find(btn => btn.getAttribute('aria-label') === null)); // open menu
+    fireEvent.click(menuButtons.find(btn => btn.getAttribute('aria-label') === null)!); // open menu
     await userEvent.click(screen.getByText(/quote reply/i));
     expect(screen.getByText(/quote reply/i)).toBeInTheDocument();
   });
