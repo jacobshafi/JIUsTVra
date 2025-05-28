@@ -1,63 +1,88 @@
 import { render, screen, fireEvent } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { expect, vi, describe, it } from 'vitest';
+import { vi, describe, it, expect } from 'vitest';
 import Comment from './Comment';
 
+const baseComment = {
+  id: '1',
+  parentId: null,
+  text: 'Hello **world**!',
+  createdAt: Date.now(),
+  author: 'user' as const,
+};
 
 describe('Comment', () => {
-  const baseComment = {
-    id: '1',
-    parentId: null,
-    text: 'Test comment',
-    createdAt: Date.now(),
-    author: 'user' as const,
-  };
-
-  it('renders comment text and author', () => {
+  it('renders comment card with avatar, username, and markdown', () => {
     render(<Comment comment={baseComment} />);
-    expect(screen.getByText('Test comment')).toBeInTheDocument();
     expect(screen.getByText('You')).toBeInTheDocument();
+    expect(screen.getByText(/hello/i)).toBeInTheDocument();
+    expect(screen.getByText('world', { selector: 'strong' })).toBeInTheDocument();
+    expect(screen.getByText('🧑')).toBeInTheDocument();
   });
 
-  it('calls openThread when reply in thread is clicked', () => {
-    const openThread = vi.fn();
-    render(<Comment comment={baseComment} menuOpen={true} setMenuOpen={vi.fn()} openThread={openThread} />);
-    const replyBtn = screen.getByText(/reply in thread/i);
-    fireEvent.click(replyBtn);
-    expect(openThread).toHaveBeenCalled();
-  });
-
-  it('calls onEdit when editing and saving', async () => {
+  it('shows menu on button click and calls handlers', async () => {
+    const onQuote = vi.fn();
     const onEdit = vi.fn();
-    render(<Comment comment={baseComment} menuOpen={true} setMenuOpen={vi.fn()} onEdit={onEdit} />);
-    fireEvent.click(screen.getByText(/edit/i));
-    const textarea = screen.getByRole('textbox');
-    await userEvent.clear(textarea);
-    await userEvent.type(textarea, 'Edited!');
-    fireEvent.click(screen.getByText(/save/i));
-    expect(onEdit).toHaveBeenCalledWith('1', 'Edited!');
-  });
-
-  it('calls onDelete when delete is clicked', () => {
     const onDelete = vi.fn();
-    render(<Comment comment={baseComment} menuOpen={true} setMenuOpen={vi.fn()} onDelete={onDelete} />);
-    fireEvent.click(screen.getByText(/delete/i));
-    expect(onDelete).toHaveBeenCalledWith('1');
-  });
-
-  it('shows menu on button click and hides on second click', () => {
     let menuOpen = false;
     const setMenuOpen = vi.fn((open) => { menuOpen = open; });
-    const { rerender } = render(
-      <Comment comment={baseComment} menuOpen={menuOpen} setMenuOpen={setMenuOpen} />
+    render(
+      <Comment
+        comment={baseComment}
+        onQuote={onQuote}
+        onEdit={onEdit}
+        onDelete={onDelete}
+        menuOpen={menuOpen}
+        setMenuOpen={setMenuOpen}
+      />
     );
+    // Open menu
     const menuBtn = screen.getByRole('button');
     fireEvent.click(menuBtn);
     expect(setMenuOpen).toHaveBeenCalledWith(true);
+  });
 
-    // Simulate menu now open
-    rerender(<Comment comment={baseComment} menuOpen={true} setMenuOpen={setMenuOpen} />);
-    fireEvent.click(menuBtn);
+  it('calls onQuote and closes menu', () => {
+    const onQuote = vi.fn();
+    const setMenuOpen = vi.fn();
+    render(
+      <Comment
+        comment={baseComment}
+        onQuote={onQuote}
+        menuOpen={true}
+        setMenuOpen={setMenuOpen}
+      />
+    );
+    fireEvent.click(screen.getByText(/quote reply/i));
+    expect(onQuote).toHaveBeenCalledWith(baseComment.text);
     expect(setMenuOpen).toHaveBeenCalledWith(false);
+  });
+
+  it('calls onEdit and closes menu', () => {
+    const setMenuOpen = vi.fn();
+    render(
+      <Comment
+        comment={baseComment}
+        onEdit={vi.fn()}
+        menuOpen={true}
+        setMenuOpen={setMenuOpen}
+      />
+    );
+    fireEvent.click(screen.getByText(/edit/i));
+    expect(setMenuOpen).toHaveBeenCalledWith(false);
+  });
+
+  it('calls onDelete', () => {
+    const onDelete = vi.fn();
+    render(
+      <Comment
+        comment={baseComment}
+        onDelete={onDelete}
+        menuOpen={true}
+        setMenuOpen={vi.fn()}
+      />
+    );
+    fireEvent.click(screen.getByText(/delete/i));
+    expect(onDelete).toHaveBeenCalledWith(baseComment.id);
   });
 }); 

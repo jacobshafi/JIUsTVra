@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { type Comment as CommentType } from '../db/db';
 import { MoreVertical } from 'lucide-react';
+import ReactMarkdown from 'react-markdown';
 
 interface Props {
   comment: CommentType;
@@ -10,18 +11,12 @@ interface Props {
   onEdit?: (id: string, newText: string) => void;
   menuOpen?: boolean;
   setMenuOpen?: (open: boolean) => void;
+  onQuote?: (text: string) => void;
 }
 
-export default function Comment({ comment, openThread, replies, onDelete, onEdit, menuOpen, setMenuOpen }: Props) {
-  const isBot = comment.author === 'bot';
+export default function Comment({ comment, openThread, replies, onDelete, onEdit, menuOpen, setMenuOpen, onQuote }: Props) {
   const [isEditing, setIsEditing] = useState(false);
   const [editText, setEditText] = useState(comment.text);
-
-  function getLastAuthor() {
-    const last = replies?.[replies.length - 1];
-    if (!last) return '';
-    return last.author === 'bot' ? 'Support Bot' : 'You';
-  }
 
   function formatTime(timestamp: number) {
     return new Date(timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
@@ -35,18 +30,14 @@ export default function Comment({ comment, openThread, replies, onDelete, onEdit
   };
 
   return (
-    <div className="flex gap-2 px-4 py-2 group relative hover:bg-gray-100 rounded-md transition">
-      <div className="w-8 h-8 rounded-full bg-gray-300 flex items-center justify-center text-xl">
-        {isBot ? '🤖' : '🧑'}
-      </div>
-
-      <div className="flex-1">
+    <div className="border border-gray-200 bg-white px-4 py-3 flex gap-3 group relative">
+      <div className="w-9 h-9 rounded-full bg-gray-100 flex items-center justify-center text-xl font-bold border border-gray-300">🧑</div>
+      <div className="flex-1 min-w-0">
         <div className="flex items-center gap-2 mb-1">
-          <span className="text-sm font-semibold text-gray-800">{isBot ? 'Support Bot' : 'You'}</span>
-          <span className="text-xs text-gray-500">{formatTime(comment.createdAt)}</span>
+          <span className="text-sm font-semibold text-gray-800">You</span>
+          <span className="text-xs text-gray-400">{formatTime(comment.createdAt)}</span>
         </div>
-
-        <div className="bg-gray-100 rounded-md px-3 py-2 text-sm text-gray-900 max-w-full shadow-sm relative">
+        <div className="text-gray-900 text-[1rem] leading-relaxed prose prose-sm max-w-none">
           {isEditing ? (
             <div className="space-y-2">
               <textarea
@@ -75,68 +66,52 @@ export default function Comment({ comment, openThread, replies, onDelete, onEdit
               </div>
             </div>
           ) : (
-            <>
+            <ReactMarkdown
+              components={{
+                blockquote: ({node, ...props}) => (
+                  <blockquote className="border-l-4 border-blue-300 bg-blue-50 px-3 py-1 my-2 text-gray-700 italic" {...props} />
+                )
+              }}
+            >
               {comment.text}
-              {(comment.author === 'user' || typeof openThread === 'function') && (
-                <button
-                  onClick={() => setMenuOpen?.(!menuOpen)}
-                  className="absolute top-1 right-1 opacity-0 group-hover:opacity-100 transition"
-                >
-                  <MoreVertical className="w-4 h-4 text-gray-500" />
-                </button>
-              )}
-            </>
-          )}
-
-          {menuOpen && !isEditing && (
-            <div className="absolute right-1 top-6 bg-white border shadow rounded-md text-sm z-10">
-              {openThread && (
-                <button onClick={openThread} className="block px-4 py-2 hover:bg-gray-100 w-full text-left">
-                  Reply in thread
-                </button>
-              )}
-
-              {comment.author === 'user' && (
-                <>
-                  <button 
-                    onClick={() => {
-                      setIsEditing(true);
-                      setMenuOpen?.(false);
-                    }} 
-                    className="block px-4 py-2 hover:bg-gray-100 w-full text-left"
-                  >
-                    Edit
-                  </button>
-                  <button 
-                    onClick={() => onDelete?.(comment.id)} 
-                    className="block px-4 py-2 text-red-500 hover:bg-gray-100 w-full text-left"
-                  >
-                    Delete
-                  </button>
-                </>
-              )}
-            </div>
+            </ReactMarkdown>
           )}
         </div>
-
-        {replies && replies.length > 0 && (
-          <button
-            onClick={openThread}
-            className="mt-2 text-xs text-blue-600 hover:underline ml-2 flex flex-col items-start"
-          >
-            <div className="flex items-center gap-1">
-              <span>{replies.length} {replies.length === 1 ? 'reply' : 'replies'}</span>
-              <span className="text-gray-400">·</span>
-              <span className="text-gray-500 italic">
-                last by {getLastAuthor()} at {formatTime(replies[replies.length - 1].createdAt)}
-              </span>
-            </div>
-            <div className="text-gray-600 mt-1 truncate max-w-xs">
-              {replies[replies.length - 1].text}
-            </div>
-          </button>
-        )}
       </div>
+      <button
+        onClick={() => setMenuOpen?.(!menuOpen)}
+        className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition"
+      >
+        <MoreVertical className="w-5 h-5 text-gray-400 hover:text-gray-600" />
+      </button>
+      {menuOpen && !isEditing && (
+        <div className="absolute right-2 top-10 bg-white border shadow rounded-md text-sm z-20 min-w-[140px] animate-fade-in">
+          <button
+            onClick={() => {
+              onQuote?.(comment.text);
+              setMenuOpen?.(false);
+            }}
+            className="block px-4 py-2 hover:bg-gray-100 w-full text-left"
+          >
+            Quote reply
+          </button>
+          <button 
+            onClick={() => {
+              setIsEditing(true);
+              setMenuOpen?.(false);
+            }} 
+            className="block px-4 py-2 hover:bg-gray-100 w-full text-left"
+          >
+            Edit
+          </button>
+          <button 
+            onClick={() => onDelete?.(comment.id)} 
+            className="block px-4 py-2 text-red-500 hover:bg-gray-100 w-full text-left"
+          >
+            Delete
+          </button>
+        </div>
+      )}
     </div>
   );
 }

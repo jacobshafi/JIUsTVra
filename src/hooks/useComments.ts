@@ -3,15 +3,6 @@ import { db, type Comment } from '../db/db';
 import { v4 as uuidv4 } from 'uuid';
 import { useEffect } from 'react';
 
-const botReplies = [
-  "That's a great question! 👍",
-  "Sure thing! Let me check that for you 🤓",
-  "Absolutely! 🙌",
-  "Working on it now ⏳",
-  "You're totally right.",
-  "I'll get back to you in a moment!",
-];
-
 const channel = new BroadcastChannel('comments-sync'); // allows for cross-tab communication
 
 export function useComments() {
@@ -51,35 +42,6 @@ export function useComments() {
     };
     await db.comments.add(newComment);
     channel.postMessage({ type: 'ADD', data: newComment });
-
-    const shouldReplyInThread = Math.random() > 0.5;
-
-    if (parentId === null || shouldReplyInThread) {
-      const replyParentId = shouldReplyInThread ? newComment.id : null;
-
-      setTimeout(() => {
-        db.comments.add({
-          id: 'typing',
-          parentId: replyParentId,
-          text: '',
-          createdAt: Date.now(),
-          author: 'bot',
-        });
-      }, 500);
-
-      setTimeout(async () => {
-        await db.comments.delete('typing');
-        const reply: Comment = {
-          id: uuidv4(),
-          parentId: replyParentId,
-          text: botReplies[Math.floor(Math.random() * botReplies.length)],
-          createdAt: Date.now(),
-          author: 'bot',
-        };
-        await db.comments.add(reply);
-        channel.postMessage({ type: 'ADD', data: reply });
-      }, 1500);
-    }
   };
 
   const deleteComment = async (id: string) => {

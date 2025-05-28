@@ -1,74 +1,67 @@
 import { useComments } from '../hooks/useComments';
 import CommentForm from './CommentForm';
 import Comment from './Comment';
-import ThreadPanel from './ThreadPanel';
-import { useState } from 'react';
+import { useState, useRef } from 'react';
 import { type Comment as CommentType } from '../db/db';
 
 export default function CommentThread() {
   const { comments, addComment, deleteComment, editComment } = useComments();
-  const [activeThreadId, setActiveThreadId] = useState<string | null>(null);
+  const [quotedText, setQuotedText] = useState<string | null>(null);
+  const textareaRef = useRef<HTMLTextAreaElement>(null!);
   const [openMenuId, setOpenMenuId] = useState<string | null>(null);
 
   const rootComments = comments
     .filter((c) => c.parentId === null)
     .sort((a, b) => a.createdAt - b.createdAt);
 
-  const activeThread = activeThreadId
-    ? comments.find((c) => c.id === activeThreadId) || null
-    : null;
+  function handleQuote(text: string) {
+    setQuotedText(text);
+    setTimeout(() => {
+      textareaRef.current?.focus();
+    }, 0);
+  }
 
   return (
-    <div className="w-full max-w-6xl h-[80vh] bg-white shadow-lg rounded-lg flex border border-gray-300 overflow-hidden">
-      {/* Left - Main */}
-      <div className="flex flex-col flex-1">
-        <div className="bg-gray-800 p-4 text-white flex items-center gap-2">
-          <div className="w-8 h-8 rounded-full bg-white text-gray-800 text-xl flex items-center justify-center">💬</div>
-          <div className="flex flex-col">
-            <span className="text-sm font-bold">PulseDesk ;) </span>
-            <span className="text-xs text-gray-300">Online</span>
-          </div>
+    <div className="w-full min-h-screen bg-[#f6f8fa]">
+      <div className="w-full border-b bg-white px-8 pt-8 pb-4">
+        <div className="flex items-center gap-4 mb-2">
+          <h1 className="text-2xl font-bold text-gray-900">
+            Autarc's Billion Euro Project <span className="text-gray-400 font-normal">#941</span>
+          </h1>
+          <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800 border border-green-200">
+            Open
+          </span>
         </div>
-
-        <div className="flex-1 overflow-y-auto px-3 py-4 space-y-4 bg-gray-50">
-          {rootComments.map((comment) => {
-            const replies = comments
-              .filter((c) => c.parentId === comment.id)
-              .sort((a, b) => a.createdAt - b.createdAt);
-            return (
-              <Comment
-                key={comment.id}
-                comment={comment}
-                replies={replies}
-                openThread={() => {
-                  setActiveThreadId(comment.id);
-                  setOpenMenuId(null);
-                }}
-                onDelete={deleteComment}
-                onEdit={editComment}
-                menuOpen={openMenuId === comment.id}
-                setMenuOpen={(open) => setOpenMenuId(open ? comment.id : null)}
-              />
-            );
-          })}
-        </div>
-
-        <div className="p-3 border-t bg-white">
-          <CommentForm onSubmit={(text) => addComment(text)} />
+        <div className="text-sm text-gray-500">
+          Opened by <span className="font-medium text-gray-700">You</span> just now
         </div>
       </div>
-
-      {/* Right - Thread */}
-      {activeThread && (
-        <ThreadPanel
-          parent={activeThread}
-          comments={comments}
-          onClose={() => setActiveThreadId(null)}
-          onReply={(text) => addComment(text, activeThread.id)}
-          onDelete={deleteComment}
-          onEdit={editComment}
-        />
-      )}
+      <div className="max-w-2xl mx-auto py-8 px-4">
+        <div className="space-y-4">
+          {rootComments.map((comment) => (
+            <Comment
+              key={comment.id}
+              comment={comment}
+              onDelete={deleteComment}
+              onEdit={editComment}
+              onQuote={handleQuote}
+              menuOpen={openMenuId === comment.id}
+              setMenuOpen={(open) => setOpenMenuId(open ? comment.id : null)}
+            />
+          ))}
+        </div>
+        <div className="mt-8">
+          <CommentForm
+            onSubmit={(text) => {
+              addComment(text);
+              setQuotedText(null);
+            }}
+            quotedText={quotedText ?? undefined}
+            onClearQuote={() => setQuotedText(null)}
+            inputRef={textareaRef}
+          />
+        </div>
+      </div>
     </div>
   );
 }
