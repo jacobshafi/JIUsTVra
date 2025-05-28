@@ -52,3 +52,19 @@ npx vitest run
 - `npx vitest run` — Run all tests once
 
 ---
+
+# Autarc Comments Challenge
+
+## Design Choice: Nested Comments
+
+This solution implements **nested comments** using a **quote reply** (Markdown blockquote) pattern, as seen in professional tools like GitHub Issues. Instead of visually nesting replies under parent comments (which can become cluttered and hard to follow), users can reply to any comment by quoting it. The quoted comment appears in a styled block above the input, providing clear context for the reply.
+
+**Why this approach?**
+- This is the industry standard for professional SaaS tools where users are commenting on projects.
+- It keeps the UI clean, readable, and easy to follow.
+- It avoids the complexity and clutter of deeply nested threads.
+- It provides clear context for replies without sacrificing usability.
+
+If true visual nesting (threaded comments) is required, it can be implemented, but this approach is best suited for Autarc's use case and aligns with modern collaboration tools.
+
+---
